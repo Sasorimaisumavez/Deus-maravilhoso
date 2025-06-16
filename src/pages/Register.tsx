@@ -10,6 +10,7 @@ import { Select } from '../components/ui/select';
 import { validationService } from '../services/validationService';
 import { addressService } from '../services/addressService';
 import { fileService } from '../services/fileService';
+import { locationService } from '../services/locationService';
 import { FormField, WorkingHours, Institution } from '../types';
 import { Heart, User, Mail, Lock, Phone, MapPin, Building, Upload, Eye, EyeOff } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -233,6 +234,20 @@ export const Register: React.FC = () => {
       } else {
         userData.cnpj = formData.cnpj.value;
         userData.description = formData.description.value;
+        
+        // Geocode the address to get coordinates
+        let latitude = -23.5505; // Default São Paulo coordinates
+        let longitude = -46.6333;
+        
+        try {
+          const fullAddress = `${formData.street.value}, ${formData.number.value}, ${formData.neighborhood.value}, ${formData.city.value}, ${formData.state.value}`;
+          const locationData = await locationService.geocodeAddress(fullAddress);
+          latitude = locationData.latitude;
+          longitude = locationData.longitude;
+        } catch (error) {
+          console.warn('Could not geocode address, using default coordinates');
+        }
+        
         userData.address = {
           id: uuidv4(),
           street: formData.street.value,
@@ -242,8 +257,8 @@ export const Register: React.FC = () => {
           city: formData.city.value,
           state: formData.state.value,
           zipCode: formData.zipCode.value,
-          latitude: -23.5505, // Default coordinates (São Paulo)
-          longitude: -46.6333
+          latitude,
+          longitude
         };
         userData.workingHours = workingHours;
         userData.acceptedCategories = [];

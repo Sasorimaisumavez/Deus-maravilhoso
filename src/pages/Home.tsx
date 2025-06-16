@@ -169,6 +169,18 @@ export const Home: React.FC = () => {
     navigate(`/institution/${institution.id}`);
   };
 
+  const getLocationDisplay = () => {
+    if (!userLocation) return '';
+    
+    if (userLocation.city && userLocation.state) {
+      return `${userLocation.city}, ${userLocation.state}`;
+    } else if (userLocation.address) {
+      return userLocation.address;
+    } else {
+      return `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}`;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -239,7 +251,7 @@ export const Home: React.FC = () => {
             ) : (
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 max-w-md mx-auto">
                 <p className="text-green-100 mb-2">📍 Sua localização:</p>
-                <p className="font-medium">{userLocation.city}, {userLocation.state}</p>
+                <p className="font-medium">{getLocationDisplay()}</p>
               </div>
             )}
           </div>

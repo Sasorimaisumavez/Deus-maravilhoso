@@ -22,14 +22,19 @@ class LocationService {
               latitude,
               longitude,
               address: address.display_name,
-              city: address.city || address.town || address.village,
-              state: address.state
+              city: address.address?.city || address.address?.town || address.address?.village || '',
+              state: address.address?.state || ''
             };
             
             resolve(locationData);
           } catch (error) {
             // Return location without address if reverse geocoding fails
-            resolve({ latitude, longitude });
+            resolve({ 
+              latitude, 
+              longitude,
+              city: '',
+              state: ''
+            });
           }
         },
         (error) => {
@@ -81,8 +86,8 @@ class LocationService {
         latitude: parseFloat(result.lat),
         longitude: parseFloat(result.lon),
         address: result.display_name,
-        city: result.address?.city || result.address?.town || result.address?.village,
-        state: result.address?.state
+        city: result.address?.city || result.address?.town || result.address?.village || '',
+        state: result.address?.state || ''
       };
     } catch (error) {
       console.error('Geocoding error:', error);

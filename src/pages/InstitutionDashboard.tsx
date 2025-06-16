@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { Institution, Donation } from '../types';
@@ -13,24 +15,44 @@ import {
   Star,
   MapPin,
   Settings,
-  Users
+  Users,
+  Edit,
+  Save,
+  X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import Swal from 'sweetalert2';
 
 export const InstitutionDashboard: React.FC = () => {
-  const { user } = useAuth();
-  const { donations, institutions, updateDonation } = useData();
+  const { user, updateUser } = useAuth();
+  const { donations, institutions, updateDonation, updateInstitution, categories } = useData();
   
   const [institution, setInstitution] = useState<Institution | null>(null);
   const [institutionDonations, setInstitutionDonations] = useState<Donation[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    description: '',
+    acceptedCategories: [] as string[]
+  });
 
   useEffect(() => {
     if (user && user.type === 'institution') {
+      // Find institution by user ID
       const inst = institutions.find(inst => inst.id === user.id);
-      setInstitution(inst || null);
-      
       if (inst) {
+        setInstitution(inst);
+        setEditForm({
+          name: inst.name,
+          email: inst.email,
+          phone: inst.phone,
+          description: inst.description,
+          acceptedCategories: inst.acceptedCategories
+        });
+        
         const filtered = donations.filter(donation => donation.institutionId === inst.id);
         setInstitutionDonations(filtered);
       }
@@ -48,6 +70,62 @@ export const InstitutionDashboard: React.FC = () => {
       };
       updateDonation(updatedDonation);
     }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!institution || !user) return;
+
+    try {
+      // Update user data
+      const updatedUser = {
+        ...user,
+        name: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone
+      };
+
+      // Update institution data
+      const updatedInstitution = {
+        ...institution,
+        name: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+        description: editForm.description,
+        acceptedCategories: editForm.acceptedCategories,
+        updatedAt: new Date()
+      };
+
+      await updateUser(updatedUser);
+      await updateInstitution(updatedInstitution);
+      
+      setInstitution(updatedInstitution);
+      setIsEditing(false);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Informações atualizadas!',
+        text: 'Suas informações foram salvas com sucesso.',
+        confirmButtonColor: '#2E7D32',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro',
+        text: 'Não foi possível salvar as alterações.',
+        confirmButtonColor: '#2E7D32'
+      });
+    }
+  };
+
+  const handleCategoryToggle = (categoryName: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      acceptedCategories: prev.acceptedCategories.includes(categoryName)
+        ? prev.acceptedCategories.filter(cat => cat !== categoryName)
+        : [...prev.acceptedCategories, categoryName]
+    }));
   };
 
   const getStatusIcon = (status: string) => {
@@ -96,7 +174,12 @@ export const InstitutionDashboard: React.FC = () => {
         <Header />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">Carregando...</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Instituição não encontrada
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Verifique se você está logado como uma instituição.
+            </p>
           </div>
         </div>
       </div>
@@ -110,13 +193,113 @@ export const InstitutionDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {institution.name} 🏢
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Gerencie as doações recebidas e mantenha seu perfil atualizado.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {institution.name} 🏢
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Gerencie as doações recebidas e mantenha seu perfil atualizado.
+              </p>
+            </div>
+            <Button
+              onClick={() => setIsEditing(!isEditing)}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              {isEditing ? <X size={16} /> : <Edit size={16} />}
+              <span>{isEditing ? 'Cancelar' : 'Editar perfil'}</span>
+            </Button>
+          </div>
         </div>
+
+        {/* Edit Form */}
+        {isEditing && (
+          <Card className="p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Editar informações
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome da instituição
+                </label>
+                <Input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <Input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Telefone
+                </label>
+                <Input
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descrição
+                </label>
+                <Textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Categorias aceitas
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {categories.map((category) => (
+                    <label key={category.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={editForm.acceptedCategories.includes(category.name)}
+                        onChange={() => handleCategoryToggle(category.name)}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm">{category.icon} {category.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button
+                onClick={() => setIsEditing(false)}
+                variant="outline"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSaveChanges}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Save className="mr-2" size={16} />
+                Salvar alterações
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -169,38 +352,30 @@ export const InstitutionDashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Ações rápidas</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button
-              variant="outline"
-              className="p-6 h-auto flex flex-col items-center space-y-2"
-            >
-              <Settings size={32} />
-              <span className="text-lg font-medium">Editar perfil</span>
-              <span className="text-sm opacity-70">Atualize suas informações</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="p-6 h-auto flex flex-col items-center space-y-2"
-            >
-              <MapPin size={32} />
-              <span className="text-lg font-medium">Ver no mapa</span>
-              <span className="text-sm opacity-70">Veja sua localização</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="p-6 h-auto flex flex-col items-center space-y-2"
-            >
-              <Users size={32} />
-              <span className="text-lg font-medium">Gerenciar categorias</span>
-              <span className="text-sm opacity-70">Tipos de doação aceitos</span>
-            </Button>
+        {/* Current Categories */}
+        <Card className="p-6 mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Categorias aceitas atualmente
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {institution.acceptedCategories.map((categoryName) => {
+              const category = categories.find(cat => cat.name === categoryName);
+              return (
+                <div
+                  key={categoryName}
+                  className="bg-green-50 text-green-800 px-3 py-2 rounded-lg text-center font-medium"
+                >
+                  {category?.icon} {categoryName}
+                </div>
+              );
+            })}
           </div>
-        </div>
+          {institution.acceptedCategories.length === 0 && (
+            <p className="text-gray-500 text-center py-4">
+              Nenhuma categoria selecionada. Clique em "Editar perfil" para adicionar.
+            </p>
+          )}
+        </Card>
 
         {/* Donations */}
         <div>

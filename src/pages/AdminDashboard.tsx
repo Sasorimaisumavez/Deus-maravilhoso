@@ -366,7 +366,7 @@ export const AdminDashboard: React.FC = () => {
                     type="text"
                     value={newCategory.icon}
                     onChange={(e) => setNewCategory(prev => ({ ...prev, icon: e.target.value }))}
-                    placeholder="📱"
+                    placeholder="Ex: 📱"
                     maxLength={2}
                   />
                 </div>

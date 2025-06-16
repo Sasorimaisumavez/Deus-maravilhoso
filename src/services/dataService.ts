@@ -137,92 +137,12 @@ class DataService {
     return ratings.filter(rating => rating.institutionId === institutionId);
   }
 
-  // Initialize sample data
+  // Initialize sample data - removed sample institutions
   async initializeSampleData(): Promise<void> {
-    const institutions = await this.getInstitutions();
-    if (institutions.length === 0) {
-      await this.createSampleInstitutions();
-    }
-  }
-
-  private async createSampleInstitutions(): Promise<void> {
-    const sampleInstitutions: Institution[] = [
-      {
-        id: uuidv4(),
-        name: 'Casa de Apoio São Francisco',
-        email: 'contato@casasaofrancisco.org',
-        password: '',
-        phone: '(11) 3456-7890',
-        cnpj: '12.345.678/0001-90',
-        type: 'institution',
-        description: 'Instituição dedicada ao apoio de famílias em situação de vulnerabilidade social, oferecendo assistência alimentar, educacional e de saúde.',
-        address: {
-          id: uuidv4(),
-          street: 'Rua das Flores',
-          number: '123',
-          neighborhood: 'Centro',
-          city: 'São Paulo',
-          state: 'SP',
-          zipCode: '01234-567',
-          latitude: -23.5505,
-          longitude: -46.6333
-        },
-        workingHours: [
-          { dayOfWeek: 0, isOpen: false, openTime: '', closeTime: '' },
-          { dayOfWeek: 1, isOpen: true, openTime: '08:00', closeTime: '17:00' },
-          { dayOfWeek: 2, isOpen: true, openTime: '08:00', closeTime: '17:00' },
-          { dayOfWeek: 3, isOpen: true, openTime: '08:00', closeTime: '17:00' },
-          { dayOfWeek: 4, isOpen: true, openTime: '08:00', closeTime: '17:00' },
-          { dayOfWeek: 5, isOpen: true, openTime: '08:00', closeTime: '17:00' },
-          { dayOfWeek: 6, isOpen: true, openTime: '08:00', closeTime: '12:00' }
-        ],
-        acceptedCategories: ['Roupas', 'Alimentos', 'Brinquedos'],
-        rating: 4.5,
-        totalRatings: 23,
-        verified: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: uuidv4(),
-        name: 'ONG Esperança',
-        email: 'contato@ongesperanca.org',
-        password: '',
-        phone: '(11) 2345-6789',
-        cnpj: '23.456.789/0001-01',
-        type: 'institution',
-        description: 'Organização não governamental focada na educação e desenvolvimento de crianças e adolescentes em comunidades carentes.',
-        address: {
-          id: uuidv4(),
-          street: 'Avenida da Esperança',
-          number: '456',
-          neighborhood: 'Vila Nova',
-          city: 'São Paulo',
-          state: 'SP',
-          zipCode: '02345-678',
-          latitude: -23.5489,
-          longitude: -46.6388
-        },
-        workingHours: [
-          { dayOfWeek: 0, isOpen: false, openTime: '', closeTime: '' },
-          { dayOfWeek: 1, isOpen: true, openTime: '09:00', closeTime: '18:00' },
-          { dayOfWeek: 2, isOpen: true, openTime: '09:00', closeTime: '18:00' },
-          { dayOfWeek: 3, isOpen: true, openTime: '09:00', closeTime: '18:00' },
-          { dayOfWeek: 4, isOpen: true, openTime: '09:00', closeTime: '18:00' },
-          { dayOfWeek: 5, isOpen: true, openTime: '09:00', closeTime: '18:00' },
-          { dayOfWeek: 6, isOpen: false, openTime: '', closeTime: '' }
-        ],
-        acceptedCategories: ['Livros e Material Escolar', 'Brinquedos', 'Roupas'],
-        rating: 4.8,
-        totalRatings: 15,
-        verified: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
-
-    for (const institution of sampleInstitutions) {
-      await this.saveInstitution(institution);
+    // Only initialize categories if they don't exist
+    const categories = await fileSystemService.getAllCategories();
+    if (categories.length === 0) {
+      await this.getDefaultCategories();
     }
   }
 }
